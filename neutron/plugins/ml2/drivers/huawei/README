@@ -1,0 +1,7 @@
+
+Huawei Neutron ML2 Mechanism Driver
+
+This mechanism driver implements ML2 Driver API and is used to manage the virtual and physical networks using Huawei Hardware.
+
+For more details on use please refer to:
+https://wiki.openstack.org/wiki/ml2-huawei-switch-mech-driver
