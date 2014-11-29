@@ -26,35 +26,40 @@ Proposed change
 
 The diagram below provides a brief overview of how the Huawei Switch ML2
 Mechanism driver interact with Neutron Server and Huawei switches.
+Flows::
 
-             +-------------------------+
-             |   Neutron Server        |
-             |   with ML2 plugin       |
-+------------+                         |
-|            |        +----------------+        NetConf
-|            |        |                +-----------------------+
-|    +-------+        |  Huawei Switch +---------------------+ |
-|    |       |        |  ML2 Mechanism |                     | |
-|    |       |        |  Driver        |                     | |
-|    |       |        |                |         +-------------+----+
-|    |       +--------+----------------+         |           |      |
-|    |                                           | +---------+------+--+
-|    |       +-----------+-------------+         | |                   |
-|    +-------+  L2 Agent | OVS or      +---------+ |       Huawei      |
-|            |           | Linux Bridge|         | |       switches    |
-|            +-----------+-------------+         | |                   |
-|            |    Compute Host 1       |         +-+                   |
-|            |                         |           +---+---------------+
-|            +-------------------------+               |
-|                                                      |
-|            +------------+-------------+              |
-|            |  L2 Agent  | OVS or      |              |
-+------------+            | Linux Bridge+--------------+
-             +------------+-------------+
-             |    Compute Host 2        |
-             |                          |
-             +--------------------------+
-
+          +–––––––––––––––––––––––––+
+          |                         |
+          | Neutron Server          |
+          | with ML2 Plugin         |
+          |                         |
+          |       +–––––––––––––––––+
+  +–––––––+       |                 |      
+  |       |       |  Huawei Switch  +––––––––––––––––––––––+
+  |       |       |   Mechanism     |      NETCONF         |
+  |  +––––+       |    Driver       +––––––––––––––––––––––––––+
+  |  |    |       |                 |                      |   |
+  |  |    +–––––––+–––––––––––––––––+                      |   |
+  |  |                                                     |   |
+  |  |                                                     |   |
+  |  |    +–––––––––––+––––––––––––––+                     |   |
+  |  +––––+ L2 Agent  | Open vSwitch +–––––+               |   |
+  |       +–––––––––––+––––––––––––––+     |               |   |
+  |       |                          |     |               |   |
+  |       |        HOST 1            |     |               |   |
+  |       |                          |     |      +––––––––+–––|––––––+
+  |       +––––––––––––––––––––––––––+     |      |            |      |
+  |                                        +––––––+  +–––––––––+––––––+––+
+  |                                               |  |                   |
+  |       +––––––––––+–––––––––––––––+            |  |     Huawei        |
+  +–––––––+ L2 Agent | Open vSwitch  +––––––––––––+  |    switches       |
+          +––––––––––+–––––––––––––––+            |  |                   |
+          |                          |            +––+                   |
+          |        HOST 2            |               |                   |
+          |                          |               +–––––––––––––––––––+
+          +––––––––––––––––––––––––––+
+		  
+The APIC mechanism driver updates the APIC with port, network and
 The Huawei Switch ML2 driver will implement CRUD APIs for network, subnets,
 and ports. It configures the physical switch through NetConf protocol.
 
