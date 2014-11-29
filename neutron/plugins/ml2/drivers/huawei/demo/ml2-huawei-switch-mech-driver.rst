@@ -4,79 +4,73 @@
 
  http://creativecommons.org/licenses/by/3.0/legalcode
 
-==========================================
+==================================
 Huawei Switch ML2 Mechanism driver
-==========================================
+==================================
 
 https://blueprints.launchpad.net/neutron/+spec/ml2-huawei-switch-mech-driver
 
-* HW-SDN MD : Huawei Switch Mechanism Driver
-* HW-SDN CR : Huawei Switch
-
-The purpose of this blueprint is to build an ML2 Mechanism Driver for Huawei
-Switch, which provides NETCONF access ability for ML2 plugin of Neutron.
+This blueprint is to introduce support for Huawei switches in Neutron as a
+ML2 mechanism driver.
 
 Problem description
 ===================
 
-This blueprint specifies need of Huawei Switch ML2 Mechanism driver to automate the provisioning of Huawei Switch using NETCONF.
-
-In current Openstack Neutron deployment VM＊s attached to the overlay network could not communicate to the network devices/bare-metal 
-servers attached to the physical networks. In addition, forwarding performance using software switch like Open vSwitch will be still
-a problem in most scenes.
+This blueprint proposes Huawei's modular L2 mechanism driver to automate the
+provisioning of physical Huawei switches (spine and leaf switches) based
+on the virtual network configuration in OpenStack Neutron.
 
 
 Proposed change
 ===============
 
-The diagram below provides a high level overview of the interactions between Huawei Switch and OpenStack components.
+The diagram below provides a brief overview of how the Huawei Switch ML2
+Mechanism driver interact with Neutron Server and Huawei switches.
 
-        +每每每每每每每每每每每每每每每每每每每每每每每每每+
-        |                         |
-        | Neutron Server          |
-        | with ML2 Plugin         |
-        |                         |
-        |          +每每每每每每每每每每每+  |
-+每每每每每每每+          |   Huawei  |  |
-|       |          |   Switch  |  |                  +每每每每每每每每每每每每每每每每每+
-|       |          |   ML2     |  |                  |                 |
-|  +----|          |   Driver  |  |                  |                 |
-|  |    |          +-----------+  |+每每每每每每每每每每每每每每每每每|     NETCONF     |
-|  |    +每每每每每每每+每每每每每每每每每每每每每每每每每+                  |                 |
-|  |                                                 |                 |
-|  |                                                 +每每每+每每每+每每每每每每每每每+
-|  |    +每每每每每每每每每每每+每每每每每每每每每每每每每每+                     |   |
-|  +每每每每+ L2 Agent  | Open vSwitch +每每每每每+               |   |
-|       +每每每每每每每每每每每+每每每每每每每每每每每每每每+     |               |   |
-|       |                          |     |               |   |
-|       |        HOST 1            |     |               |   |
-|       |                          |     |      +每每每每每每每每+每每每|每每每每每每+
-|       +每每每每每每每每每每每每每每每每每每每每每每每每每每+     |      |            |      |
-|                                        +每每每每每每+  +每每每每每每每每每+每每每每每每+每每+
-|                                               |  |                   |
-|       +每每每每每每每每每每+每每每每每每每每每每每每每每每+            |  |     Huawei        |
-+每每每每每每每+ L2 Agent | Open vSwitch  +每每每每每每每每每每每每+  |     Switch        |
-        +每每每每每每每每每每+每每每每每每每每每每每每每每每+            |  |                   |
-        |                          |            +每每+                   |
-        |        HOST 2            |               |                   |
-        |                          |               +每每每每每每每每每每每每每每每每每每每+
-        +每每每每每每每每每每每每每每每每每每每每每每每每每每+
+             +-------------------------+
+             |   Neutron Server        |
+             |   with ML2 plugin       |
++------------+                         |
+|            |        +----------------+        NetConf
+|            |        |                +-----------------------+
+|    +-------+        |  Huawei Switch +---------------------+ |
+|    |       |        |  ML2 Mechanism |                     | |
+|    |       |        |  Driver        |                     | |
+|    |       |        |                |         +-------------+----+
+|    |       +--------+----------------+         |           |      |
+|    |                                           | +---------+------+--+
+|    |       +-----------+-------------+         | |                   |
+|    +-------+  L2 Agent | OVS or      +---------+ |       Huawei      |
+|            |           | Linux Bridge|         | |       switches    |
+|            +-----------+-------------+         | |                   |
+|            |    Compute Host 1       |         +-+                   |
+|            |                         |           +---+---------------+
+|            +-------------------------+               |
+|                                                      |
+|            +------------+-------------+              |
+|            |  L2 Agent  | OVS or      |              |
++------------+            | Linux Bridge+--------------+
+             +------------+-------------+
+             |    Compute Host 2        |
+             |                          |
+             +--------------------------+
 
-The Huawei Switch ML2 driver will handle the network events and configure Huawei Switch using these data. 
-This can be responsible for network between all the compute nodes.
+The Huawei Switch ML2 driver will implement CRUD APIs for network, subnets,
+and ports. It configures the physical switch through NetConf protocol.
 
-When baremental or hypervisor with virtual machines connect to Huawei Switch, the topology of physical network will be created. 
-That means when you get IP address of one host, the device and the port which the host connect to are fixed. So when users created network 
-for compute nodes, the ML2 Mechanism driver can handle vlan information with specific port on corresponding device.
+The Huawei Switch ML2 driver is deisgned to operate togehter with the OVS
+mechanism driver or Linux bridge for handling network operation and port
+binding on the compute nodes.
 
+The following Neutron events are supported:
 
-Huawei Switch ML2 driver handles the following postcommit operations.
+ * Network create/update/delete
+ * Subnet  create/update/delete
+ * Port    create/update/delete (Note: the driver does not handle port 
+   bindingi -- the OVS driver or linux bridge driver already handle it.)
 
-Network create/update/delete
-Subnet  create/update/delete
-Port    create/update/delete
-
-Supported network types include vlan and other types will be provided in future.
+Supported network types include vlan and other types will be provided in
+future.
 
 
 Alternatives
@@ -84,13 +78,16 @@ Alternatives
 
 None
 
-
 Data model impact
 -----------------
 
-This mechanism driver introduces new table which are specific to the Huawei Switch mechanism driver.
+This mechanism driver introduces three new tables which are specific to the
+Huawei Switch mechanism driver.
 
-Network topology: Stores binding between host and port, device
+ * huawei_switch_tenant: Stores tenant information.
+ * huawei_switch_port: Stores between network and port configuration.
+ * huawei_switch_network: Stores between network and network
+   segmentation (VLAN) information
 
 No existing models are changed.
 
@@ -128,8 +125,21 @@ None
 Other deployer impact
 ---------------------
 
-None
+The deployer must configure the installation to use the Huawei Switch ML2
+mechanism driver with the following configuration variables:
 
+ * IP address of Huawei switches
+ * Username and password to access Huawei switches' netconf agent
+ * VLAN ranges to be used by OpenStack
+ * Huawei switch with hosts mapping for the compute nodes
+
+Additionally, the deployer must configure the ML2 plugin to include Huawei
+Switch ML2 mechanism driver:
+
+::
+
+  [ml2]
+  mechanism_drivers = openvswitch,huawei_switch
 
 
 Developer impact
@@ -149,17 +159,15 @@ Assignee(s)
 
 Primary assignee:
 
-None
-
+liaowenqi
+yapengwu
 
 Work Items
 ----------
 
-1. Change the setup.cfg to introduce 'huawei' as the mechanism driver.
-2. An REST client for Huawei Switch should be developed first.
-3. Mechanism driver should implement create/update/delete_resource_postcommit.
-4. Test connection between two new instances under different subnets.
-
+Huawei Switch ML2 mechanism driver code
+Unit tests
+Huawei CI infrastructure with ML2 driver
 
 Dependencies
 ============
@@ -170,21 +178,18 @@ None
 Testing
 =======
 
-1. The whole setup can be deployed using OVS and Huawei Switch can be deployed
-in VM.
-2. For each module added to the mechanism driver, unit test is provided.
-3. Functional testing with tempest will be provided. The third-party Huawei CI
-report will be provided to validate this ML2 mechanism driver.
+Unit Test coverage
+Support for this driver in Huawei CI
 
 
 Documentation Impact
 ====================
 
-Huawei Switch ML2 Mechanism driver description and configuration details will be added.
+Huawei Switch ML2 Mechanism driver description and configuration details will
+be added.
 
 
 References
 ==========
 
 https://wiki.openstack.org/wiki/Ml2-huawei-switch-mech-driver
-
